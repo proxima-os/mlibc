@@ -478,6 +478,7 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 	size_t phdr_count = 0;
 	void *entry_pointer = 0;
 	void *stack_entropy = nullptr;
+	uintptr_t vdso_base = 0;
 
 	const char *execfn = "(executable)";
 
@@ -646,6 +647,7 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 			case AT_EXECFN: execfn = reinterpret_cast<const char *>(*value); break;
 			case AT_RANDOM: stack_entropy = reinterpret_cast<void*>(*value); break;
 			case AT_SECURE: rtldConfig.secureRequired = reinterpret_cast<uintptr_t>(*value); break;
+			case AT_SYSINFO_EHDR: vdso_base = reinterpret_cast<uintptr_t>(*value); break;
 		}
 
 		aux += 2;
@@ -694,6 +696,45 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 	globalScope.initialize(true);
 
 	// Add the dynamic linker, as well as the exectuable to the repository.
+
+	if (vdso_base) {
+		auto vdso_header = reinterpret_cast<elf_ehdr *>(vdso_base);
+		auto vdso_phdrs = reinterpret_cast<void *>(vdso_base + vdso_header->e_phoff);
+		elf_dyn *vdso_dynamic = nullptr;
+
+		for (size_t i = 0; i < vdso_header->e_phnum; i++) {
+			auto phdr = reinterpret_cast<elf_phdr *>(vdso_base + vdso_header->e_phoff
+				+ i * vdso_header->e_phentsize);
+
+			if (phdr->p_type == PT_DYNAMIC) {
+				vdso_dynamic = reinterpret_cast<elf_dyn *>(vdso_base + phdr->p_vaddr);
+				break;
+			}
+		}
+
+		const char *vdso_strtab = nullptr;
+		size_t vdso_soname_offset = 0;
+
+		for (auto dyn = vdso_dynamic; dyn->d_tag != DT_NULL; dyn++) {
+			switch (dyn->d_tag) {
+			case DT_STRTAB:
+				vdso_strtab = reinterpret_cast<const char *>(vdso_base + dyn->d_un.d_ptr);
+				break;
+			case DT_SONAME:
+				vdso_soname_offset = dyn->d_un.d_val;
+				break;
+			}
+		}
+
+		auto vdso_soname = &vdso_strtab[vdso_soname_offset];
+
+		auto vdso = initialRepository->injectObjectFromDts(vdso_soname, 
+			frg::string<MemoryAllocator> { getAllocator() }, vdso_base, vdso_dynamic, 1);
+		vdso->phdrPointer = vdso_phdrs;
+		vdso->phdrCount = vdso_header->e_phnum;
+		vdso->phdrEntrySize = vdso_header->e_phentsize;
+	}
+
 #ifndef MLIBC_STATIC_BUILD
 	auto ldso_soname = reinterpret_cast<const char *>(ldso_base + strtab_offset + soname_str);
 	auto ldso = initialRepository->injectObjectFromDts(ldso_soname,
