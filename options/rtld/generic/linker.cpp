@@ -1423,7 +1423,13 @@ uintptr_t ObjectSymbol::virtualAddress() {
 	auto bind = ELF_ST_BIND(_symbol->st_info);
 	__ensure(bind == STB_GLOBAL || bind == STB_WEAK || bind == STB_GNU_UNIQUE);
 	__ensure(_symbol->st_shndx != SHN_UNDEF);
-	return _object->baseAddress + _symbol->st_value;
+	auto address = _object->baseAddress + _symbol->st_value;
+
+	if (ELF_ST_TYPE(_symbol->st_info) == STT_GNU_IFUNC) {
+		address = reinterpret_cast<uintptr_t(*)()>(address)();
+	}
+
+	return address;
 }
 
 // --------------------------------------------------------
