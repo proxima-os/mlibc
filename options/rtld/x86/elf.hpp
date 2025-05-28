@@ -26,6 +26,7 @@ using elf_vernaux = Elf32_Vernaux;
 #define ELF_R_SYM ELF32_R_SYM
 #define ELF_R_TYPE ELF32_R_TYPE
 #define ELF_ST_BIND ELF32_ST_BIND
+#define ELF_ST_TYPE ELF32_ST_TYPE
 
 #define R_NONE R_386_NONE
 #define R_JUMP_SLOT R_386_JMP_SLOT

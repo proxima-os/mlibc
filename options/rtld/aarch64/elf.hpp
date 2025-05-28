@@ -26,6 +26,7 @@ using elf_vernaux = Elf64_Vernaux;
 #define ELF_R_SYM ELF64_R_SYM
 #define ELF_R_TYPE ELF64_R_TYPE
 #define ELF_ST_BIND ELF64_ST_BIND
+#define ELF_ST_TYPE ELF64_ST_TYPE
 
 #define R_NONE R_AARCH64_NONE
 #define R_JUMP_SLOT R_AARCH64_JUMP_SLOT

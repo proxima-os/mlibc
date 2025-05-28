@@ -1,6 +1,7 @@
 
 .global _start
 _start:
+	mov %rsp, %rdi
 	call relocateSelf
 
 	mov %rsp, %rdi

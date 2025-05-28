@@ -77,19 +77,212 @@ uintptr_t getLdsoBase() {
 #endif
 }
 
+static uintptr_t getSymbolAddress(uintptr_t base, elf_sym *sym) {
+	uintptr_t addr = base + sym->st_value;
+
+	if (ELF_ST_TYPE(sym->st_info) == STT_GNU_IFUNC) {
+		addr = reinterpret_cast<uintptr_t(*)()>(addr)();
+	}
+
+	return addr;
+}
+
+static uintptr_t getEarlySymbol(uintptr_t base, size_t symtab_offset, size_t symtab_entry_size,
+	size_t strtab_offset, size_t sym_index, uintptr_t next_base, size_t next_symtab_offset,
+	size_t next_symtab_entry_size, size_t next_strtab_offset, size_t next_hash_offset,
+	size_t next_gnu_hash_offset) {
+	auto sym = reinterpret_cast<elf_sym *>(base + symtab_offset + sym_index * symtab_entry_size);
+
+	if (sym->st_shndx != STN_UNDEF && ELF_ST_BIND(sym->st_info) == STB_GLOBAL) {
+		return getSymbolAddress(base, sym);
+	}
+
+	if (next_base != UINTPTR_MAX) {
+		frg::string_view name = reinterpret_cast<const char *>(base + strtab_offset + sym->st_name);
+
+		if (next_gnu_hash_offset != 0) {
+			struct GnuTable {
+				uint32_t nBuckets;
+				uint32_t symbolOffset;
+				uint32_t bloomSize;
+				uint32_t bloomShift;
+			};
+
+			auto table = reinterpret_cast<const GnuTable *>(next_base + next_hash_offset);
+			auto buckets = reinterpret_cast<const uint32_t *>(next_base + next_hash_offset
+					+ sizeof(GnuTable) + table->bloomSize * sizeof(elf_addr));
+			auto chains = reinterpret_cast<const uint32_t *>(next_base + next_hash_offset + sizeof(GnuTable)
+					+ table->bloomSize * sizeof(elf_addr) + table->nBuckets * sizeof(uint32_t));
+
+			// TODO: Use the bloom filter.
+
+			auto hash = gnuHash(name);
+			auto index = buckets[hash % table->nBuckets];
+
+			if (index != 0) {
+				while (true) {
+					auto chash = chains[index - table->symbolOffset];
+					if ((chash & ~1) == (hash & ~1)) {
+						auto next_sym = reinterpret_cast<elf_sym *>(next_base + next_symtab_offset
+							+ index * next_symtab_entry_size);
+						auto next_name = reinterpret_cast<const char *>(next_base
+							+ next_strtab_offset * next_sym->st_name);
+
+						if (next_sym->st_shndx != STN_UNDEF && frg::string_view(next_name) == name) {
+							return getSymbolAddress(next_base, next_sym);
+						}
+					}
+
+					if (chash & 1)
+						break;
+					index++;
+				}
+			}
+		} else if (next_hash_offset != 0) {
+			auto table = reinterpret_cast<uint32_t *>(next_base + next_hash_offset);
+			auto num_buckets = table[0];
+			auto bucket = elf64Hash(name) % num_buckets;
+			auto index = table[2 + bucket];
+
+			while (index != 0) {
+				auto next_sym = reinterpret_cast<elf_sym *>(next_base + next_symtab_offset
+					+ index * next_symtab_entry_size);
+				auto next_name = reinterpret_cast<const char *>(next_base + next_strtab_offset
+					+ next_sym->st_name);
+
+				if (next_sym->st_shndx != STN_UNDEF && frg::string_view(next_name) == name) {
+					return getSymbolAddress(next_base, next_sym);
+				}
+
+				index = table[2 + num_buckets + index];
+			}
+		}
+	}
+
+	if (sym->st_shndx != STN_UNDEF) {
+		return getSymbolAddress(base, sym);
+	}
+
+	if (ELF_ST_BIND(sym->st_info) == STB_WEAK) {
+		return 0;
+	}
+
+	__builtin_trap();
+}
+
+static void processEarlyRelocations(size_t ldso_base, size_t symtab_offset, size_t symtab_entry_size,
+	size_t strtab_offset, size_t vdso_base, size_t vdso_symtab_offset, size_t vdso_symtab_entry_size,
+	size_t vdso_strtab_offset, size_t vdso_hash_offset, size_t vdso_gnu_hash_offset, size_t offset,
+	size_t size, bool rela) {
+	size_t entry_size = rela ? sizeof(elf_rela) : sizeof(elf_rel);
+
+	for (size_t disp = 0; disp < size; disp += entry_size) {
+		auto reloc = reinterpret_cast<elf_rela *>(ldso_base + offset + disp);
+
+		auto type = ELF_R_TYPE(reloc->r_info);
+		auto sym_index = ELF_R_SYM(reloc->r_info);
+		uintptr_t sym_address = 0;
+
+		if (sym_index) {
+			sym_address = getEarlySymbol(ldso_base, symtab_offset, symtab_entry_size, strtab_offset,
+				sym_index, vdso_base, vdso_symtab_offset, vdso_symtab_entry_size, vdso_strtab_offset,
+				vdso_hash_offset, vdso_gnu_hash_offset);
+		}
+
+		auto p = reinterpret_cast<uint64_t *>(ldso_base + reloc->r_offset);
+		switch(type) {
+		case R_RELATIVE:
+			if (rela) {
+				*p = ldso_base + reloc->r_addend;
+			} else {
+				*p += ldso_base;
+			}
+			break;
+		case R_GLOB_DAT:
+		case R_JUMP_SLOT:
+			*p = sym_address;
+			break;
+		default:
+			__builtin_trap();
+		}
+	}
+}
+
 #if !defined(__m68k__)
 // Relocates the dynamic linker (i.e. this DSO) itself.
 // Assumptions:
-// - There are no references to external symbols.
+// - All references to external symbols can be satisfied from the image given by AT_SYSINFO_EHDR.
+// - The image given by AT_SYSINFO_EHDR does not need to be relocated.
 // Note that this code is fragile in the sense that it must not contain relocations itself.
 // TODO: Use tooling to verify this at compile time.
-extern "C" void relocateSelf() {
+extern "C" void relocateSelf(uintptr_t *entry_stack) {
+	entry_stack += entry_stack[0] + 2; // skip over argc and argv
+
+	// skip over envp
+	while (true) {
+		if (*entry_stack++ == 0) {
+			break;
+		}
+	}
+
+	// find vdso
+	uintptr_t vdso_base = UINTPTR_MAX;
+
+	while (entry_stack[0] != AT_NULL) {
+		if (entry_stack[0] == AT_SYSINFO_EHDR) {
+			vdso_base = entry_stack[1];
+			break;
+		}
+
+		entry_stack += 2;
+	}
+
+	size_t vdso_symtab_offset = 0;
+	size_t vdso_symtab_entry_size = 0;
+	size_t vdso_strtab_offset = 0;
+	size_t vdso_hash_offset = 0;
+	size_t vdso_gnu_hash_offset = 0;
+
+	if (vdso_base != UINTPTR_MAX) {
+		auto header = reinterpret_cast<elf_ehdr *>(vdso_base);
+		size_t vdso_dynamic_offset = 0;
+
+		for (size_t i = 0; i < header->e_phnum; i++) {
+			auto phdr = reinterpret_cast<elf_phdr *>(vdso_base + header->e_phoff + i * header->e_phentsize);
+
+			if (phdr->p_type == PT_DYNAMIC) {
+				vdso_dynamic_offset = phdr->p_vaddr;
+				break;
+			}
+		}
+
+		auto dynamic = reinterpret_cast<elf_dyn *>(vdso_base + vdso_dynamic_offset);
+
+		while (dynamic->d_tag != DT_NULL) {
+			switch (dynamic->d_tag) {
+			case DT_SYMTAB: vdso_symtab_offset = dynamic->d_un.d_ptr; break;
+			case DT_SYMENT: vdso_symtab_entry_size = dynamic->d_un.d_val; break;
+			case DT_STRTAB: vdso_strtab_offset = dynamic->d_un.d_ptr; break;
+			case DT_HASH: vdso_hash_offset = dynamic->d_un.d_ptr; break;
+			case DT_GNU_HASH: vdso_gnu_hash_offset = dynamic->d_un.d_ptr; break;
+			}
+
+			dynamic++;
+		}
+	}
+
 	size_t rela_offset = 0;
 	size_t rela_size = 0;
 	size_t rel_offset = 0;
 	size_t rel_size = 0;
 	size_t relr_offset = 0;
 	size_t relr_size = 0;
+	size_t pltrel_offset = 0;
+	size_t pltrel_size = 0;
+	bool pltrel_rela = false;
+	size_t symtab_offset = 0;
+	size_t symtab_entry_size = 0;
+	size_t strtab_offset = 0;
 	for(size_t i = 0; _DYNAMIC[i].d_tag != DT_NULL; i++) {
 		auto ent = &_DYNAMIC[i];
 		switch(ent->d_tag) {
@@ -99,44 +292,26 @@ extern "C" void relocateSelf() {
 		case DT_RELASZ: rela_size = ent->d_un.d_val; break;
 		case DT_RELR: relr_offset = ent->d_un.d_ptr; break;
 		case DT_RELRSZ: relr_size = ent->d_un.d_val; break;
+		case DT_JMPREL: pltrel_offset = ent->d_un.d_ptr; break;
+		case DT_PLTRELSZ: pltrel_size = ent->d_un.d_val; break;
+		case DT_PLTREL: pltrel_rela = ent->d_un.d_val == DT_RELA; break;
+		case DT_SYMTAB: symtab_offset = ent->d_un.d_ptr; break;
+		case DT_SYMENT: symtab_entry_size = ent->d_un.d_val; break;
+		case DT_STRTAB: strtab_offset = ent->d_un.d_ptr; break;
 		}
 	}
 
 	auto ldso_base = getLdsoBase();
 
-	for(size_t disp = 0; disp < rela_size; disp += sizeof(elf_rela)) {
-		auto reloc = reinterpret_cast<elf_rela *>(ldso_base + rela_offset + disp);
-
-		auto type = ELF_R_TYPE(reloc->r_info);
-		if(ELF_R_SYM(reloc->r_info))
-			__builtin_trap();
-
-		auto p = reinterpret_cast<uint64_t *>(ldso_base + reloc->r_offset);
-		switch(type) {
-		case R_RELATIVE:
-			*p = ldso_base + reloc->r_addend;
-			break;
-		default:
-			__builtin_trap();
-		}
-	}
-
-	for(size_t disp = 0; disp < rel_size; disp += sizeof(elf_rel)) {
-		auto reloc = reinterpret_cast<elf_rel *>(ldso_base + rel_offset + disp);
-
-		auto type = ELF_R_TYPE(reloc->r_info);
-		if(ELF_R_SYM(reloc->r_info))
-			__builtin_trap();
-
-		auto p = reinterpret_cast<uint64_t *>(ldso_base + reloc->r_offset);
-		switch(type) {
-		case R_RELATIVE:
-			*p += ldso_base;
-			break;
-		default:
-			__builtin_trap();
-		}
-	}
+	processEarlyRelocations(ldso_base, symtab_offset, symtab_entry_size, strtab_offset, vdso_base,
+		vdso_symtab_offset, vdso_symtab_entry_size, vdso_strtab_offset, vdso_hash_offset,
+		vdso_gnu_hash_offset, rela_offset, rela_size, true);
+	processEarlyRelocations(ldso_base, symtab_offset, symtab_entry_size, strtab_offset, vdso_base,
+		vdso_symtab_offset, vdso_symtab_entry_size, vdso_strtab_offset, vdso_hash_offset,
+		vdso_gnu_hash_offset, rel_offset, rel_size, false);
+	processEarlyRelocations(ldso_base, symtab_offset, symtab_entry_size, strtab_offset, vdso_base,
+		vdso_symtab_offset, vdso_symtab_entry_size, vdso_strtab_offset, vdso_hash_offset,
+		vdso_gnu_hash_offset, pltrel_offset, pltrel_size, pltrel_rela);
 
 	elf_addr *addr = nullptr;
 	for(size_t disp = 0; disp < relr_size; disp += sizeof(elf_relr)) {
@@ -356,6 +531,10 @@ extern "C" void *interpreterMain(uintptr_t *entry_stack) {
 		case DT_RELRENT:
 		case DT_PLTGOT:
 		case DT_BIND_NOW:
+		case DT_NEEDED:
+		case DT_PLTRELSZ:
+		case DT_PLTREL:
+		case DT_JMPREL:
 			continue;
 		case DT_FLAGS: {
 			if((ent->d_un.d_val & ~supportedDtFlags) == 0) {

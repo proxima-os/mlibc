@@ -575,11 +575,12 @@ typedef struct {
 } Elf64_Nhdr;
 
 /* ST_TYPE (subfield of st_info) values (symbol type) */
-#define STT_NOTYPE	0
-#define STT_OBJECT	1
-#define STT_FUNC	2
-#define STT_SECTION	3
-#define STT_FILE	4
+#define STT_NOTYPE	  0
+#define STT_OBJECT	  1
+#define STT_FUNC	  2
+#define STT_SECTION	  3
+#define STT_FILE	  4
+#define STT_GNU_IFUNC 10
 
 /* ST_BIND (subfield of st_info) values (symbol binding) */
 #define STB_LOCAL	0
