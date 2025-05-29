@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/wait.h> */
 #ifndef _ABIBITS_WAIT_H
 #define _ABIBITS_WAIT_H
 

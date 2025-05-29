@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/mman.h> */
 #ifndef _ABIBITS_VM_FLAGS_H
 #define _ABIBITS_VM_FLAGS_H
 

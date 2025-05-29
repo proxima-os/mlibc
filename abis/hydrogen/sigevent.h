@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <signal.h> */
 #ifndef _ABIBITS_SIGEVENT_H
 #define _ABIBITS_SIGEVENT_H
 

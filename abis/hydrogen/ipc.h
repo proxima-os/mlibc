@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/ipc.h> */
 #ifndef _ABIBITS_IPC_H
 #define _ABIBITS_IPC_H
 

@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/stat.h> */
 #ifndef _ABIBITS_STAT_H
 #define _ABIBITS_STAT_H
 

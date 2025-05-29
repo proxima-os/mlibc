@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <termios.h> */
 #ifndef _ABIBITS_TERMIOS_H
 #define _ABIBITS_TERMIOS_H
 

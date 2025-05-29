@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/types.h> */
 #ifndef _ABIBITS_FSFILCNT_T_H
 #define _ABIBITS_FSFILCNT_T_H
 

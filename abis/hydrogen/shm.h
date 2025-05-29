@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/shm.h> */
 #ifndef _ABIBITS_SHM_H
 #define _ABIBITS_SHM_H
 

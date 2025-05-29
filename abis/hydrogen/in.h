@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <netinet/in.h> */
 #ifndef _ABIBITS_IN_H
 #define _ABIBITS_IN_H
 

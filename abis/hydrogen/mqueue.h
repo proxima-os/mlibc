@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <mqueue.h> */
 #ifndef _ABIBITS_MQUEUE_H
 #define _ABIBITS_MQUEUE_H
 

@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/socket.h> */
 #ifndef _ABIBITS_SOCKET_H
 #define _ABIBITS_SOCKET_H
 

@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/statvfs.h> */
 #ifndef _ABIBITS_STATVFS_H
 #define _ABIBITS_STATVFS_H
 

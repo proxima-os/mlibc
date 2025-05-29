@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/resource.h> */
 #ifndef _ABIBITS_RESOURCE_H
 #define _ABIBITS_RESOURCE_H
 

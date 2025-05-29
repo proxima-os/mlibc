@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/msg.h> */
 #ifndef _ABIBITS_MSG_H
 #define _ABIBITS_MSG_H
 

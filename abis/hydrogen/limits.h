@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <limits.h> */
 #ifndef _ABIBITS_LIMITS_H
 #define _ABIBITS_LIMITS_H
 

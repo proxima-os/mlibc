@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <sys/utsname.h> */
 #ifndef _ABIBITS_UTSNAME_T_H
 #define _ABIBITS_UTSNAME_T_H
 

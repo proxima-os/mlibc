@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <errno.h> */
 #ifndef _ABIBITS_ERRNO_H
 #define _ABIBITS_ERRNO_H 1
 

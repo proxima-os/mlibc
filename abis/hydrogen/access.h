@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <unistd.h> */
 #ifndef _ABIBITS_ACCESS_H
 #define _ABIBITS_ACCESS_H
 

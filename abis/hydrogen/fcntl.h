@@ -1,3 +1,4 @@
+/* IWYU pragma: private, include <fcntl.h> */
 #ifndef _ABIBITS_FCNTL_H
 #define _ABIBITS_FCNTL_H
 
