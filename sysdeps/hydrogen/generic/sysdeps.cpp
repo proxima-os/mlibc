@@ -1,10 +1,14 @@
+#include "hydrogen/types.h"
 #include <bits/ensure.h>
+#include <cstddef>
 #include <dirent.h>
 #include <errno.h>
 #include <hydrogen/eventqueue.h>
 #include <hydrogen/filesystem.h>
 #include <hydrogen/handle.h>
 #include <hydrogen/hydrogen.h>
+#include <hydrogen/ioctl-data.h>
+#include <hydrogen/ioctl.h>
 #include <hydrogen/memory.h>
 #include <hydrogen/process.h>
 #include <hydrogen/thread.h>
@@ -1472,12 +1476,30 @@ ret:
 	return error;
 }
 
-int sys_ioctl(int, unsigned long request, void *, int *) {
-	// this switch is necessary because the native call takes a size parameter
+int sys_ioctl(int fd, unsigned long request, void *arg, int *result) {
+	size_t size;
+
 	switch (request) {
+		case __IOCTL_MEM_ALLOCATE:
+			size = sizeof(hydrogen_ioctl_mem_allocate_t);
+			break;
+		case __IOCTL_MEM_IS_RAM:
+			size = sizeof(hydrogen_ioctl_mem_is_ram_t);
+			break;
+		case __IOCTL_MEM_NEXT_RAM_RANGE:
+			size = sizeof(hydrogen_ioctl_mem_next_ram_range_t);
+			break;
 		default:
 			return ENOTTY;
 	}
+
+	hydrogen_ret_t ret = hydrogen_fs_ioctl(fd, request, arg, size);
+
+	if (ret.error == 0) {
+		*result = ret.integer;
+	}
+
+	return ret.error;
 }
 
 int sys_sigtimedwait(
