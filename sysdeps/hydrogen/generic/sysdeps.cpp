@@ -1489,6 +1489,9 @@ int sys_ioctl(int fd, unsigned long request, void *arg, int *result) {
 		case __IOCTL_MEM_NEXT_RAM_RANGE:
 			size = sizeof(hydrogen_ioctl_mem_next_ram_range_t);
 			break;
+		case __IOCTL_IRQ_OPEN:
+			size = sizeof(hydrogen_ioctl_irq_open_t);
+			break;
 		default:
 			return ENOTTY;
 	}
