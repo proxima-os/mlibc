@@ -240,12 +240,21 @@ int sys_clock_get(int clock, time_t *secs, long *nanos) {
 			time = hydrogen_boot_time();
 			break;
 		case CLOCK_PROCESS_CPUTIME_ID: {
-			hydrogen_cpu_time_t data;
+			hydrogen_process_cpu_time_t data;
 			int error = hydrogen_process_get_cpu_time(&data);
 			if (error != 0) {
 				return error;
 			}
-			time = data.kernel_time + data.user_time;
+			time = data.self.kernel + data.self.user;
+			break;
+		}
+		case CLOCK_THREAD_CPUTIME_ID: {
+			hydrogen_cpu_time_t data;
+			int error = hydrogen_thread_get_cpu_time(&data);
+			if (error != 0) {
+				return error;
+			}
+			time = data.kernel + data.user;
 			break;
 		}
 		default:
@@ -1095,7 +1104,7 @@ static struct timeval createTimeVal(uint64_t time) {
 }
 
 int sys_getrusage(int scope, struct rusage *usage) {
-	hydrogen_cpu_time_t time;
+	hydrogen_process_cpu_time_t time;
 	int error = hydrogen_process_get_cpu_time(&time);
 
 	if (error) {
@@ -1107,12 +1116,12 @@ int sys_getrusage(int scope, struct rusage *usage) {
 
 	switch (scope) {
 		case RUSAGE_SELF:
-			utime = time.user_time;
-			ktime = time.kernel_time;
+			utime = time.self.user;
+			ktime = time.self.kernel;
 			break;
 		case RUSAGE_CHILDREN:
-			utime = time.child_user_time;
-			ktime = time.child_kernel_time;
+			utime = time.children.user;
+			ktime = time.children.kernel;
 			break;
 		default:
 			return EINVAL;
@@ -1612,17 +1621,17 @@ int sys_setgroups(size_t size, const gid_t *list) {
 }
 
 int sys_times(struct tms *tms, clock_t *out) {
-	hydrogen_cpu_time_t time;
+	hydrogen_process_cpu_time_t time;
 	int error = hydrogen_process_get_cpu_time(&time);
 
 	if (error) {
 		return error;
 	}
 
-	tms->tms_utime = time.user_time / 1000;
-	tms->tms_stime = time.kernel_time / 1000;
-	tms->tms_cutime = time.child_user_time / 1000;
-	tms->tms_cstime = time.child_kernel_time / 1000;
+	tms->tms_utime = time.self.user / 1000;
+	tms->tms_stime = time.self.kernel / 1000;
+	tms->tms_cutime = time.children.user / 1000;
+	tms->tms_cstime = time.children.kernel / 1000;
 	*out = hydrogen_boot_time() / 1000;
 	return 0;
 }
