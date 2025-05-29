@@ -171,9 +171,23 @@ int sys_vm_map(void *hint, size_t size, int prot, int flags, int fd, off_t offse
 	hydrogen_ret_t ret;
 
 	if ((flags & MAP_ANONYMOUS) == MAP_ANONYMOUS) {
-		ret = hydrogen_vmm_map(
-		    HYDROGEN_THIS_VMM, (uintptr_t)hint, size, real_flags, HYDROGEN_INVALID_HANDLE, 0
-		);
+		int object = HYDROGEN_INVALID_HANDLE;
+
+		if ((flags & MAP_SHARED) == MAP_SHARED) {
+			ret = hydrogen_mem_object_create(size, 0);
+
+			if (ret.error) {
+				return ret.error;
+			}
+
+			object = ret.integer;
+		}
+
+		ret = hydrogen_vmm_map(HYDROGEN_THIS_VMM, (uintptr_t)hint, size, real_flags, object, 0);
+
+		if (object != HYDROGEN_INVALID_HANDLE) {
+			hydrogen_namespace_remove(HYDROGEN_THIS_NAMESPACE, object);
+		}
 	} else {
 		ret = hydrogen_fs_mmap(fd, HYDROGEN_THIS_VMM, (uintptr_t)hint, size, real_flags, offset);
 	}
