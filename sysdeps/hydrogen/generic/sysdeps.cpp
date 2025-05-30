@@ -1,6 +1,4 @@
-#include "hydrogen/types.h"
 #include <bits/ensure.h>
-#include <cstddef>
 #include <dirent.h>
 #include <errno.h>
 #include <hydrogen/eventqueue.h>
@@ -13,8 +11,10 @@
 #include <hydrogen/process.h>
 #include <hydrogen/thread.h>
 #include <hydrogen/time.h>
+#include <hydrogen/types.h>
 #include <limits.h>
 #include <mlibc/all-sysdeps.hpp>
+#include <stdio.h>
 #include <string.h>
 
 namespace mlibc {
@@ -1790,5 +1790,22 @@ int sys_waitid(idtype_t idtype, id_t id, siginfo_t *info, int options) {
 	}
 
 	return ret.error;
+}
+
+int sys_ptsname(int fd, char *buffer, size_t length) {
+	hydrogen_ret_t ret = hydrogen_fs_ioctl(fd, __IOCTL_PTM_GET_NUMBER, NULL, 0);
+
+	if (ret.error == 0) {
+		if ((size_t)snprintf(buffer, length, "/dev/pts/%zu", ret.integer) >= length) {
+			return ERANGE;
+		}
+	}
+
+	return ret.error;
+}
+
+int sys_unlockpt(int fd) {
+	int locked = 0;
+	return hydrogen_fs_ioctl(fd, __IOCTL_PTM_SET_LOCKED, &locked, sizeof(locked)).error;
 }
 }; // namespace mlibc
