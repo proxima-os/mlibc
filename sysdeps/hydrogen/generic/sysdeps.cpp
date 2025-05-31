@@ -468,8 +468,30 @@ int sys_renameat(int olddirfd, const char *old_path, int newdirfd, const char *n
 	);
 }
 
+static sigset_t mlibcSigsetToKernel(sigset_t set) {
+	return set << 1; // in mlibc, bit 0 of a sigset is for signal 1
+}
+
+static sigset_t kernelSigsetToMlibc(sigset_t set) {
+	return set >> 1; // in the kernel, bit 0 of a sigset is for signal 0
+}
+
 int sys_sigprocmask(int how, const sigset_t *__restrict set, sigset_t *__restrict retrieve) {
-	return hydrogen_thread_sigmask(how, set, retrieve);
+	sigset_t src, dst;
+
+	if (set) {
+		src = mlibcSigsetToKernel(*set);
+	}
+
+	int error = hydrogen_thread_sigmask(how, set ? &src : NULL, retrieve ? &dst : NULL);
+
+	if (error == 0) {
+		if (retrieve) {
+			*retrieve = kernelSigsetToMlibc(dst);
+		}
+	}
+
+	return error;
 }
 
 int sys_sigaction(
@@ -1544,7 +1566,8 @@ int sys_sigtimedwait(
 		}
 	}
 
-	int error = hydrogen_process_sigwait(HYDROGEN_THIS_PROCESS, *set, info, deadline);
+	int error =
+	    hydrogen_process_sigwait(HYDROGEN_THIS_PROCESS, mlibcSigsetToKernel(*set), info, deadline);
 
 	if (error == 0) {
 		*out_signal = info->si_signo;
@@ -1657,10 +1680,12 @@ int sys_sigaltstack(const stack_t *ss, stack_t *oss) {
 	return hydrogen_thread_sigaltstack(ss, oss);
 }
 
-int sys_sigsuspend(const sigset_t *set) { return hydrogen_thread_sigsuspend(*set); }
+int sys_sigsuspend(const sigset_t *set) {
+	return hydrogen_thread_sigsuspend(mlibcSigsetToKernel(*set));
+}
 
 int sys_sigpending(sigset_t *set) {
-	*set = hydrogen_thread_sigpending();
+	*set = kernelSigsetToMlibc(hydrogen_thread_sigpending());
 	return 0;
 }
 
