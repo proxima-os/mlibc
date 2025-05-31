@@ -44,6 +44,7 @@ install_headers(
     'abi-bits/utsname.h',
     'abi-bits/vm-flags.h',
     'abi-bits/wait.h',
+    'sys/sysmacros.h',
     follow_symlinks: true,
     preserve_path: true,
 )
