@@ -16,6 +16,7 @@
 #include <mlibc/all-sysdeps.hpp>
 #include <stdio.h>
 #include <string.h>
+#include <termios.h>
 
 namespace mlibc {
 void sys_libc_log(const char *message) {
@@ -1492,6 +1493,20 @@ int sys_ioctl(int fd, unsigned long request, void *arg, int *result) {
 		case __IOCTL_IRQ_OPEN:
 			size = sizeof(hydrogen_ioctl_irq_open_t);
 			break;
+		case __IOCTL_PTM_GET_NUMBER:
+		case __IOCTL_PTM_GET_LOCKED:
+			size = 0;
+			break;
+		case __IOCTL_PTM_OPEN_SLAVE:
+		case __IOCTL_PTM_SET_LOCKED:
+			size = sizeof(int);
+			break;
+		case __IOCTL_PTY_GET_SETTINGS:
+		case __IOCTL_PTY_SET_SETTINGS:
+		case __IOCTL_PTY_SET_SETTINGS_DRAIN:
+		case __IOCTL_PTY_SET_SETTINGS_FLUSH:
+			size = sizeof(struct __termios);
+			break;
 		default:
 			return ENOTTY;
 	}
@@ -1807,5 +1822,45 @@ int sys_ptsname(int fd, char *buffer, size_t length) {
 int sys_unlockpt(int fd) {
 	int locked = 0;
 	return hydrogen_fs_ioctl(fd, __IOCTL_PTM_SET_LOCKED, &locked, sizeof(locked)).error;
+}
+
+int sys_isatty(int fd) {
+	struct __termios settings;
+	return hydrogen_fs_ioctl(fd, __IOCTL_PTY_GET_SETTINGS, &settings, sizeof(settings)).error;
+}
+
+int sys_tcgetattr(int fd, struct termios *attr) {
+	struct termios value = {};
+	hydrogen_ret_t ret =
+	    hydrogen_fs_ioctl(fd, __IOCTL_PTY_GET_SETTINGS, &value.__base, sizeof(value.__base));
+
+	if (ret.error == 0) {
+		*attr = value;
+	}
+
+	return ret.error;
+}
+
+int sys_tcsetattr(int fd, int optional_actions, const struct termios *attr) {
+	int request;
+
+	switch (optional_actions) {
+		case TCSANOW:
+			request = __IOCTL_PTY_SET_SETTINGS;
+			break;
+		case TCSADRAIN:
+			request = __IOCTL_PTY_SET_SETTINGS_DRAIN;
+			break;
+		case TCSAFLUSH:
+			request = __IOCTL_PTY_SET_SETTINGS_FLUSH;
+			break;
+		default:
+			return EINVAL;
+	}
+
+	hydrogen_ret_t ret = hydrogen_fs_ioctl(
+	    fd, request, const_cast<struct __termios *>(&attr->__base), sizeof(attr->__base)
+	);
+	return ret.error;
 }
 }; // namespace mlibc

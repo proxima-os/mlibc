@@ -2,155 +2,158 @@
 #ifndef _ABIBITS_TERMIOS_H
 #define _ABIBITS_TERMIOS_H
 
-typedef unsigned char cc_t;
-typedef unsigned int speed_t;
-typedef unsigned int tcflag_t;
+#include <hydrogen/termios.h>
+
+typedef __cc_t cc_t;
+typedef unsigned speed_t;
+typedef __tcflag_t tcflag_t;
 
 /* indices for the c_cc array in struct termios */
-#define NCCS     32
-#define VINTR    0
-#define VQUIT    1
-#define VERASE   2
-#define VKILL    3
-#define VEOF     4
-#define VTIME    5
-#define VMIN     6
-#define VSWTC    7
-#define VSTART   8
-#define VSTOP    9
-#define VSUSP    10
-#define VEOL     11
-#define VREPRINT 12
-#define VDISCARD 13
-#define VWERASE  14
-#define VLNEXT   15
-#define VEOL2    16
+#define NCCS __NCCS
+/*#define VINTR    1
+#define VQUIT    2
+#define VERASE   3
+#define VKILL    4
+#define VEOF     5*/
+#define VTIME 6
+#define VMIN 7
+/*#define VSWTC    8
+#define VSTART   9
+#define VSTOP    10
+#define VSUSP    11
+#define VEOL     12
+#define VREPRINT 13
+#define VDISCARD 14
+#define VWERASE  15
+#define VLNEXT   16
+#define VEOL2    17*/
 
 /* bitwise flags for c_iflag in struct termios */
-#define IGNBRK 0000001
-#define BRKINT 0000002
-#define IGNPAR 0000004
-#define PARMRK 0000010
-#define INPCK 0000020
-#define ISTRIP 0000040
-#define INLCR 0000100
-#define IGNCR 0000200
-#define ICRNL 0000400
-#define IUCLC 0001000
-#define IXON 0002000
-#define IXANY 0004000
-#define IXOFF 0010000
-#define IMAXBEL 0020000
-#define IUTF8 0040000
+#define IUTF8 __IUTF8
+#define BRKINT 0
+#define ICRNL 0
+#define IGNBRK 0
+#define IGNCR 0
+/*#define IGNPAR 0*/
+#define INLCR 0
+/*#define INPCK 0*/
+#define ISTRIP 0
+/*#define IXANY 0
+#define IXOFF 0*/
+#define IXON 0
+#define PARMRK 0
 
 /* bitwise flags for c_oflag in struct termios */
-#define OPOST 0000001
-#define OLCUC 0000002
-#define ONLCR 0000004
-#define OCRNL 0000010
-#define ONOCR 0000020
-#define ONLRET 0000040
-#define OFILL 0000100
-#define OFDEL 0000200
+#define OPOST __OPOST
+#define ONLCR __ONLCR
+#define OCRNL __OCRNL
+#define ONOCR __ONOCR
+#define ONLRET __ONLRET
+#define OFILL __OFILL
+#define OFDEL __OFDEL
 
 #if defined(_GNU_SOURCE) || defined(_BSD_SOURCE) || defined(_XOPEN_SOURCE)
 
-#define NLDLY 0000400
-#define NL0 0000000
-#define NL1 0000400
+#define NLDLY __NLDLY
+#define NL0 __NL0
+#define NL1 __NL1
 
-#define CRDLY 0003000
-#define CR0 0000000
-#define CR1 0001000
-#define CR2 0002000
-#define CR3 0003000
+#define CRDLY __CRDLY
+#define CR0 __CR0
+#define CR1 __CR1
+#define CR2 __CR2
+#define CR3 __CR3
 
-#define TABDLY 0014000
-#define TAB0 0000000
-#define TAB1 0004000
-#define TAB2 0010000
-#define TAB3 0014000
+#define TABDLY __TABDLY
+#define TAB0 __TAB0
+#define TAB1 __TAB1
+#define TAB2 __TAB2
+#define TAB3 __TAB3
 
-#define BSDLY 0020000
-#define BS0 0000000
-#define BS1 0020000
+#define BSDLY __BSDLY
+#define BS0 __BS0
+#define BS1 __BS1
 
-#define FFDLY 0100000
-#define FF0 0000000
-#define FF1 0100000
+#define FFDLY __FFDLY
+#define FF0 __FR0
+#define FF1 __FR1
 
 #endif
 
-#define VTDLY 0040000
-#define VT0 0000000
-#define VT1 0040000
+#define VTDLY __VTDLY
+#define VT0 __VT0
+#define VT1 __VT1
 
 /* bitwise constants for c_cflag in struct termios */
-#define CSIZE 0000060
-#define CS5 0000000
-#define CS6 0000020
-#define CS7 0000040
-#define CS8 0000060
+#define CSIZE 0
+/*#define CS5 0
+#define CS6 0
+#define CS7 0*/
+#define CS8 0
 
-#define CSTOPB 0000100
-#define CREAD 0000200
-#define PARENB 0000400
-#define PARODD 0001000
-#define HUPCL 0002000
-#define CLOCAL 0004000
+/*#define CSTOPB 0
+#define CREAD 0*/
+#define PARENB 0
+/*#define PARODD 0
+#define HUPCL 0
+#define CLOCAL 0*/
 
 /* bitwise constants for c_lflag in struct termios */
-#define ISIG 0000001
-#define ICANON 0000002
-#define ECHO 0000010
-#define ECHOE 0000020
-#define ECHOK 0000040
-#define ECHONL 0000100
-#define NOFLSH 0000200
-#define TOSTOP 0000400
-#define IEXTEN 0100000
+#define ISIG 0
+#define ICANON 0
+#define ECHO 0
+/*#define ECHOE 0
+#define ECHOK 0*/
+#define ECHONL 0
+/*#define NOFLSH 0
+#define TOSTOP 0*/
+#define IEXTEN 0
 
 #if defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
 
-#define EXTA    0000016
-#define EXTB    0000017
-#define CBAUD   0010017
-#define CBAUDEX 0010000
-#define CIBAUD  002003600000
-#define CMSPAR  010000000000
-#define CRTSCTS 020000000000
+/*#define EXTA    0
+#define EXTB    0*/
+#define CBAUD   0
+/*#define CBAUDEX 0
+#define CIBAUD  0
+#define CMSPAR  0
+#define CRTSCTS 0*/
 
-#define XCASE   0000004
-#define ECHOCTL 0001000
-#define ECHOPRT 0002000
-#define ECHOKE  0004000
-#define FLUSHO  0010000
-#define PENDIN  0040000
-#define EXTPROC 0200000
+/*#define XCASE   0
+#define ECHOCTL 0
+#define ECHOPRT 0
+#define ECHOKE  0
+#define FLUSHO  0
+#define PENDIN  0
+#define EXTPROC 0*/
 
-#define XTABS 0014000
+/*#define XTABS 0*/
 
 #endif
 
 struct termios {
-	tcflag_t c_iflag;
-	tcflag_t c_oflag;
-	tcflag_t c_cflag;
-	tcflag_t c_lflag;
-	cc_t c_line;
-	cc_t c_cc[NCCS];
+	struct __termios __base;
+	unsigned char c_line;
 	speed_t ibaud;
 	speed_t obaud;
 };
 
 #define NCC 8
 struct termio {
-	unsigned short c_iflag;
-	unsigned short c_oflag;
-	unsigned short c_cflag;
-	unsigned short c_lflag;
+	struct {
+		unsigned short __input_flags;
+		unsigned short __output_flags;
+		unsigned short __control_flags;
+		unsigned short __local_flags;
+		unsigned char __control_chars[NCC];
+	} __base;
 	unsigned char c_line;
-	unsigned char c_cc[NCC];
 };
+
+#define c_iflag __base.__input_flags
+#define c_oflag __base.__output_flags
+#define c_cflag __base.__control_flags
+#define c_lflag __base.__local_flags
+#define c_cc __base.__control_chars
 
 #endif
