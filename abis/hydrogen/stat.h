@@ -60,6 +60,7 @@ struct stat {
 	mode_t st_mode;
 	uid_t st_uid;
 	gid_t st_gid;
+	dev_t st_rdev;
 };
 
 #define stat64 stat

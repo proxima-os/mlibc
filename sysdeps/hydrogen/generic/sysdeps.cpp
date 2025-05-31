@@ -847,6 +847,8 @@ int sys_stat(fsfd_target fsfdt, int fd, const char *path, int flags, struct stat
 			__ensure(!"unreachable");
 	}
 
+	statbuf->st_rdev = 0;
+
 	return 0;
 }
 
