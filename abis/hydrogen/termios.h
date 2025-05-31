@@ -10,23 +10,17 @@ typedef __tcflag_t tcflag_t;
 
 /* indices for the c_cc array in struct termios */
 #define NCCS __NCCS
-/*#define VINTR    1
-#define VQUIT    2
-#define VERASE   3
-#define VKILL    4
-#define VEOF     5*/
+#define VINTR 1
+#define VQUIT 2
+#define VERASE 3
+#define VKILL 4
+#define VEOF 5
 #define VTIME 6
 #define VMIN 7
-/*#define VSWTC    8
-#define VSTART   9
-#define VSTOP    10
-#define VSUSP    11
-#define VEOL     12
-#define VREPRINT 13
-#define VDISCARD 14
-#define VWERASE  15
-#define VLNEXT   16
-#define VEOL2    17*/
+#define VSTART 8
+#define VSTOP 9
+#define VSUSP 10
+#define VEOL 11
 
 /* bitwise flags for c_iflag in struct termios */
 #define IUTF8 __IUTF8
@@ -34,12 +28,12 @@ typedef __tcflag_t tcflag_t;
 #define ICRNL 0
 #define IGNBRK 0
 #define IGNCR 0
-/*#define IGNPAR 0*/
+#define IGNPAR 0
 #define INLCR 0
-/*#define INPCK 0*/
+#define INPCK 0
 #define ISTRIP 0
-/*#define IXANY 0
-#define IXOFF 0*/
+#define IXANY 0
+#define IXOFF 0
 #define IXON 0
 #define PARMRK 0
 
@@ -86,34 +80,34 @@ typedef __tcflag_t tcflag_t;
 
 /* bitwise constants for c_cflag in struct termios */
 #define CSIZE 0
-/*#define CS5 0
+#define CS5 0
 #define CS6 0
-#define CS7 0*/
+#define CS7 0
 #define CS8 0
 
-/*#define CSTOPB 0
-#define CREAD 0*/
+#define CSTOPB 0
+#define CREAD 0
 #define PARENB 0
-/*#define PARODD 0
+#define PARODD 0
 #define HUPCL 0
-#define CLOCAL 0*/
+#define CLOCAL 0
 
 /* bitwise constants for c_lflag in struct termios */
 #define ISIG 0
 #define ICANON 0
 #define ECHO 0
-/*#define ECHOE 0
-#define ECHOK 0*/
+#define ECHOE 0
+#define ECHOK 0
 #define ECHONL 0
-/*#define NOFLSH 0
-#define TOSTOP 0*/
+#define NOFLSH 0
+#define TOSTOP 0
 #define IEXTEN 0
 
 #if defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
 
 /*#define EXTA    0
 #define EXTB    0*/
-#define CBAUD   0
+#define CBAUD 0
 /*#define CBAUDEX 0
 #define CIBAUD  0
 #define CMSPAR  0

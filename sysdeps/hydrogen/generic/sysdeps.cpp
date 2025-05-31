@@ -1011,7 +1011,7 @@ int sys_pselect(
 	}
 
 	for (int i = 0; i < num_fds; i++) {
-		if (FD_ISSET(i, read_set)) {
+		if (read_set && FD_ISSET(i, read_set)) {
 			error = hydrogen_event_queue_add(
 			    queue, i, HYDROGEN_EVENT_FILE_DESCRIPTION_READABLE, 0, (void *)(uintptr_t)i, 0
 			);
@@ -1020,7 +1020,7 @@ int sys_pselect(
 			}
 		}
 
-		if (FD_ISSET(i, write_set)) {
+		if (write_set && FD_ISSET(i, write_set)) {
 			error = hydrogen_event_queue_add(
 			    queue, i, HYDROGEN_EVENT_FILE_DESCRIPTION_WRITABLE, 0, (void *)(uintptr_t)i, 0
 			);
@@ -1029,7 +1029,7 @@ int sys_pselect(
 			}
 		}
 
-		if (FD_ISSET(i, except_set)) {
+		if (except_set && FD_ISSET(i, except_set)) {
 			error = hydrogen_event_queue_add(
 			    queue, i, HYDROGEN_EVENT_FILE_DESCRIPTION_ERROR_REGULAR, 0, (void *)(uintptr_t)i, 0
 			);
@@ -1049,9 +1049,12 @@ int sys_pselect(
 			}
 
 			if (ret.error == EAGAIN) {
-				FD_ZERO(read_set);
-				FD_ZERO(write_set);
-				FD_ZERO(except_set);
+				if (read_set)
+					FD_ZERO(read_set);
+				if (write_set)
+					FD_ZERO(write_set);
+				if (except_set)
+					FD_ZERO(except_set);
 				break;
 			}
 
@@ -1060,9 +1063,12 @@ int sys_pselect(
 		}
 
 		if (total == 0) {
-			FD_ZERO(read_set);
-			FD_ZERO(write_set);
-			FD_ZERO(except_set);
+			if (read_set)
+				FD_ZERO(read_set);
+			if (write_set)
+				FD_ZERO(write_set);
+			if (except_set)
+				FD_ZERO(except_set);
 		}
 
 		for (size_t i = 0; i < ret.integer; i++) {
