@@ -17,7 +17,7 @@
 #define ST_NOATIME 1024
 #define ST_NODIRATIME 2048
 
-/* On Linux, this struct is not directly used by the kernel. */
+#define FSTYPSZ 16
 
 /* WARNING: keep `statvfs` and `statvfs64` in sync or bad things will happen! */
 struct statvfs {
@@ -32,6 +32,7 @@ struct statvfs {
 	unsigned long f_fsid;
 	unsigned long f_flag;
 	unsigned long f_namemax;
+	unsigned char f_basetype[FSTYPSZ];
 };
 
 /* WARNING: keep `statvfs` and `statvfs64` in sync or bad things will happen! */
@@ -47,6 +48,7 @@ struct statvfs64 {
 	unsigned long f_fsid;
 	unsigned long f_flag;
 	unsigned long f_namemax;
+	unsigned char f_basetype[FSTYPSZ];
 };
 
 #endif /* _ABIBITS_STATVFS_H */
