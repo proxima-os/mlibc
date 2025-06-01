@@ -45,6 +45,7 @@ install_headers(
     'abi-bits/vm-flags.h',
     'abi-bits/wait.h',
     'sys/sysmacros.h',
+    'mntent.h',
     follow_symlinks: true,
     preserve_path: true,
 )
