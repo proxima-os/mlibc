@@ -151,6 +151,25 @@ int sys_write(int fd, const void *buf, size_t count, ssize_t *bytes_read) {
 }
 
 int sys_vm_map(void *hint, size_t size, int prot, int flags, int fd, off_t offset, void **window) {
+	uintptr_t hint_address = reinterpret_cast<uintptr_t>(hint);
+
+	if ((flags & MAP_ANONYMOUS) == 0) {
+		size_t page_offset = offset & (hydrogen_page_size - 1);
+		hint_address -= page_offset;
+		size += page_offset;
+		offset -= page_offset;
+	}
+
+	if (hint_address & (hydrogen_page_size - 1)) {
+		if (flags & MAP_FIXED) {
+			return EINVAL;
+		}
+
+		hint_address = 0;
+	}
+
+	size = (size + (hydrogen_page_size - 1)) & ~(hydrogen_page_size - 1);
+
 	uint32_t real_flags = 0;
 
 	if ((prot & PROT_READ) == PROT_READ) {
@@ -188,13 +207,13 @@ int sys_vm_map(void *hint, size_t size, int prot, int flags, int fd, off_t offse
 			object = ret.integer;
 		}
 
-		ret = hydrogen_vmm_map(HYDROGEN_THIS_VMM, (uintptr_t)hint, size, real_flags, object, 0);
+		ret = hydrogen_vmm_map(HYDROGEN_THIS_VMM, hint_address, size, real_flags, object, 0);
 
 		if (object != HYDROGEN_INVALID_HANDLE) {
 			hydrogen_namespace_remove(HYDROGEN_THIS_NAMESPACE, object);
 		}
 	} else {
-		ret = hydrogen_fs_mmap(fd, HYDROGEN_THIS_VMM, (uintptr_t)hint, size, real_flags, offset);
+		ret = hydrogen_fs_mmap(fd, HYDROGEN_THIS_VMM, hint_address, size, real_flags, offset);
 	}
 
 	if (ret.error == 0) {
@@ -205,6 +224,11 @@ int sys_vm_map(void *hint, size_t size, int prot, int flags, int fd, off_t offse
 }
 
 int sys_vm_protect(void *pointer, size_t size, int prot) {
+	uintptr_t address = reinterpret_cast<uintptr_t>(pointer);
+	uintptr_t offset = address & (hydrogen_page_size - 1);
+	address -= offset;
+	size = (size + offset + (hydrogen_page_size - 1)) & ~(hydrogen_page_size - 1);
+
 	uint32_t real_flags = 0;
 
 	if ((prot & PROT_READ) == PROT_READ) {
@@ -219,11 +243,16 @@ int sys_vm_protect(void *pointer, size_t size, int prot) {
 		real_flags |= HYDROGEN_MEM_EXEC;
 	}
 
-	return hydrogen_vmm_remap(HYDROGEN_THIS_VMM, (uintptr_t)pointer, size, real_flags);
+	return hydrogen_vmm_remap(HYDROGEN_THIS_VMM, address, size, real_flags);
 }
 
 int sys_vm_unmap(void *pointer, size_t size) {
-	return hydrogen_vmm_unmap(HYDROGEN_THIS_VMM, (uintptr_t)pointer, size);
+	uintptr_t address = reinterpret_cast<uintptr_t>(pointer);
+	uintptr_t offset = address & (hydrogen_page_size - 1);
+	address -= offset;
+	size = (size + offset + (hydrogen_page_size - 1)) & ~(hydrogen_page_size - 1);
+
+	return hydrogen_vmm_unmap(HYDROGEN_THIS_VMM, address, size);
 }
 
 void sys_exit(int status) { hydrogen_process_exit(status); }
