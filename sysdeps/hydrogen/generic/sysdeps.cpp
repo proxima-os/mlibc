@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <termios.h>
+#include <unistd.h>
 
 namespace mlibc {
 void sys_libc_log(const char *message) {
@@ -1925,5 +1926,21 @@ int sys_tcsetattr(int fd, int optional_actions, const struct termios *attr) {
 	    fd, request, const_cast<struct __termios *>(&attr->__base), sizeof(attr->__base)
 	);
 	return ret.error;
+}
+
+int sys_sysconf(int num, long *ret) {
+	switch (num) {
+		case _SC_OPEN_MAX:
+			*ret = -1;
+			return 0;
+		case _SC_CHILD_MAX:
+			*ret = -1;
+			return 0;
+		case _SC_LINE_MAX:
+			*ret = -1;
+			return 0;
+		default:
+			return EINVAL;
+	}
 }
 }; // namespace mlibc
