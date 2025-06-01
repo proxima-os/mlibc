@@ -69,8 +69,8 @@ typedef __tcflag_t tcflag_t;
 #define BS1 __BS1
 
 #define FFDLY __FFDLY
-#define FF0 __FR0
-#define FF1 __FR1
+#define FF0 __FF0
+#define FF1 __FF1
 
 #endif
 
