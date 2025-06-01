@@ -838,6 +838,7 @@ int sys_stat(fsfd_target fsfdt, int fd, const char *path, int flags, struct stat
 	statbuf->st_ino = info.id;
 	statbuf->st_nlink = info.links;
 	statbuf->st_blocks = info.blocks;
+	statbuf->st_size = info.size;
 	statbuf->st_blksize = info.block_size;
 	statbuf->st_atim = createTimeSpec(info.atime);
 	statbuf->st_ctim = createTimeSpec(info.ctime);
