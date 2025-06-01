@@ -355,7 +355,7 @@ int sys_clone(void *, pid_t *pid_out, void *stack) {
 }
 
 int sys_open_dir(const char *path, int *handle) {
-	return sys_open(path, O_DIRECTORY | O_CLOEXEC, 0, handle);
+	return sys_open(path, O_RDONLY | O_DIRECTORY | O_CLOEXEC, 0, handle);
 }
 
 int sys_read_entries(int handle, void *buffer, size_t max_size, size_t *bytes_read) {
