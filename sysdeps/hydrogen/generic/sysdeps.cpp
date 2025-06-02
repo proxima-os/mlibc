@@ -560,7 +560,7 @@ int sys_fork(pid_t *child) {
 
 	hydrogen_namespace_remove(HYDROGEN_THIS_NAMESPACE, proc.integer);
 	hydrogen_namespace_remove(HYDROGEN_THIS_NAMESPACE, ns.integer);
-	return 0;
+	return thread.error;
 }
 
 int sys_waitpid(pid_t pid, int *status, int flags, struct rusage *ru, pid_t *ret_pid) {
