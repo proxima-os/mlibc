@@ -16,7 +16,7 @@
 #define O_CLOEXEC __O_CLOEXEC
 #define O_NONBLOCK __O_NONBLOCK
 #define O_TMPFILE __O_TMPFILE
-#define O_NOCTTY 0
+#define O_NOCTTY __O_NOCTTY
 
 #define O_RDWR (O_RDONLY | O_WRONLY)
 #define O_ACCMODE O_RDWR
